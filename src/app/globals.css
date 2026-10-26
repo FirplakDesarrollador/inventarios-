@@ -1,26 +1,32 @@
 @import "tailwindcss";
 
+/* Paleta corporativa FIRPLAK (la misma de TI y Servicios) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand: #254153;
+  --brand-dark: #1a2f3c;
+  --brand-secondary: #749094;
+  --ink: #1d1d1b;
+  --cream: #f5f1ea;
+  --line: #e8e2d5;
+  --background: #f5f1ea;
+  --foreground: #1d1d1b;
 }
 
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-ink: var(--ink);
+  --color-cream: var(--cream);
+  --color-line: var(--line);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

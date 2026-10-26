@@ -1,69 +1,89 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Suspense } from "react";
+import { AppHeader } from "@/components/app-header";
+import { BODEGAS, SEGUIMIENTOS, type Bodega, type BodegaSeguimiento } from "@/lib/bodegas";
+import { getResumenBodegas, type ResumenBodega } from "@/lib/data/conteos";
+import { fmtCompacto, fmtPct, nombreMes } from "@/lib/format";
+
+type Tablero = Bodega | BodegaSeguimiento;
+
+const GRUPOS: { titulo: string; incluye: (b: Tablero) => boolean }[] = [
+  { titulo: "Materia prima y plantas", incluye: (b) => b.codigo.startsWith("MP-") },
+  { titulo: "Producto terminado", incluye: (b) => b.codigo === "CEDI" || b.codigo.startsWith("PT-") || b.codigo.startsWith("CT-") },
+  { titulo: "Tiendas FPK Home", incluye: (b) => b.codigo.startsWith("FH") },
+];
+
+function Tarjeta({ bodega, resumen }: { bodega: Tablero; resumen?: ResumenBodega }) {
+  return (
+    <Link
+      href={`/bodegas/${bodega.codigo.toLowerCase()}`}
+      className="group flex flex-col rounded-2xl border border-line bg-white p-5 transition hover:border-brand/40 hover:shadow-sm"
+    >
+      <p className="text-xs font-semibold tracking-wider text-brand-secondary uppercase">{bodega.codigo}</p>
+      <p className="mt-1 font-semibold text-brand">{bodega.nombre}</p>
+
+      {resumen ? (
+        <div className="mt-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-2xl font-semibold text-brand tabular-nums">{fmtPct(resumen.exactitud)}</p>
+            <p className="text-xs text-brand-secondary">exactitud · {nombreMes(resumen.mes)}</p>
+          </div>
+          <div className="text-right text-xs text-brand-secondary tabular-nums">
+            <p>Sobrante {fmtCompacto(resumen.sobranteValorizado)}</p>
+            <p>Faltante {fmtCompacto(resumen.faltanteValorizado)}</p>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-brand-secondary">{"tipo" in bodega ? bodega.descripcion : "Sin conteos sincronizados"}</p>
+      )}
+    </Link>
+  );
+}
+
+// CEDI primero y luego por código, para que PT-04 y PT-07 queden en su lugar.
+const porCodigo = (a: Tablero, b: Tablero) => (a.codigo === "CEDI" ? -1 : b.codigo === "CEDI" ? 1 : a.codigo.localeCompare(b.codigo));
+
+async function Bodegas() {
+  const resumen = await getResumenBodegas();
+  return (
+    <div className="space-y-8">
+      {GRUPOS.map((g) => (
+        <section key={g.titulo}>
+          <h2 className="mb-3 text-sm font-semibold text-brand-secondary">{g.titulo}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...BODEGAS, ...SEGUIMIENTOS].filter(g.incluye).sort(porCodigo).map((b) => (
+              <Tarjeta key={b.codigo} bodega={b} resumen={resumen.get(b.codigo)} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <Suspense fallback={<div className="h-[57px] border-b border-line bg-white" />}>
+        <AppHeader />
+      </Suspense>
+
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
+        <h1 className="text-2xl font-semibold text-brand">Bodegas</h1>
+        <p className="mt-1 mb-8 text-sm text-brand-secondary">
+          Conteos cíclicos 2026 de SharePoint comparados con los ajustes registrados en SAP. Cada tarjeta muestra el último mes con conteos.
+        </p>
+
+        <Suspense
+          fallback={
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }, (_, i) => <div key={i} className="h-36 animate-pulse rounded-2xl bg-white" />)}
+            </div>
+          }
+        >
+          <Bodegas />
+        </Suspense>
       </main>
-    </div>
+    </>
   );
 }
